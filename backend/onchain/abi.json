@@ -1,0 +1,176 @@
+{"abi": [
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "batchId",
+				"type": "uint256"
+			},
+			{
+				"internalType": "enum HerbProvenance.StageType",
+				"name": "stType",
+				"type": "uint8"
+			},
+			{
+				"internalType": "string",
+				"name": "metadataHash",
+				"type": "string"
+			}
+		],
+		"name": "addStage",
+		"outputs": [],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"inputs": [],
+		"stateMutability": "nonpayable",
+		"type": "constructor"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "batchId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "creator",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "sku",
+				"type": "string"
+			}
+		],
+		"name": "BatchCreated",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "string",
+				"name": "sku",
+				"type": "string"
+			}
+		],
+		"name": "createBatch",
+		"outputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"stateMutability": "nonpayable",
+		"type": "function"
+	},
+	{
+		"anonymous": false,
+		"inputs": [
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "batchId",
+				"type": "uint256"
+			},
+			{
+				"indexed": true,
+				"internalType": "uint256",
+				"name": "stageIndex",
+				"type": "uint256"
+			},
+			{
+				"indexed": false,
+				"internalType": "enum HerbProvenance.StageType",
+				"name": "stageType",
+				"type": "uint8"
+			},
+			{
+				"indexed": true,
+				"internalType": "address",
+				"name": "actor",
+				"type": "address"
+			},
+			{
+				"indexed": false,
+				"internalType": "string",
+				"name": "metadataHash",
+				"type": "string"
+			}
+		],
+		"name": "StageAdded",
+		"type": "event"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "",
+				"type": "uint256"
+			}
+		],
+		"name": "batchSKU",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "",
+				"type": "string"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	},
+	{
+		"inputs": [
+			{
+				"internalType": "uint256",
+				"name": "batchId",
+				"type": "uint256"
+			}
+		],
+		"name": "getBatchSummary",
+		"outputs": [
+			{
+				"internalType": "string",
+				"name": "sku",
+				"type": "string"
+			},
+			{
+				"internalType": "uint256",
+				"name": "stageCount",
+				"type": "uint256"
+			},
+			{
+				"components": [
+					{
+						"internalType": "enum HerbProvenance.StageType",
+						"name": "stageType",
+						"type": "uint8"
+					},
+					{
+						"internalType": "uint256",
+						"name": "timestamp",
+						"type": "uint256"
+					},
+					{
+						"internalType": "string",
+						"name": "metadataHash",
+						"type": "string"
+					}
+				],
+				"internalType": "struct HerbProvenance.Stage[]",
+				"name": "stages",
+				"type": "tuple[]"
+			}
+		],
+		"stateMutability": "view",
+		"type": "function"
+	}
+]}
