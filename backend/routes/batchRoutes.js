@@ -9,7 +9,15 @@ const crypto = require("crypto");
 // Body parser middleware
 router.use(express.json());
 
+// Configure multer for file uploads
+const multer = require('multer');
+const upload = multer({ storage: multer.memoryStorage() });
 
+const event_stages = {
+  'CollectionEvent': 0,
+  'QualityTest': 1,
+  'ProcessingStep': 2
+}
 
 // CREATE a new batch
 router.post('/create', async (req, res) => {
@@ -28,8 +36,6 @@ const createBatchHash = (metadata) => {
   return hash.digest('hex');
 }
 
-
-
 // Add a new stage event to Supabase
 /**
  * Endpoint to add a new stage event to Supabase.
@@ -45,12 +51,16 @@ router.post('/add-stage-event', async (req, res) => {
   try {
     const { formatted_batch_id, stage_type, metadata } = req.body;
 
+    // Validate stage type
+    if(event_stages[stage_type] == undefined){
+      return res.status(400).json({ error: 'Invalid stage type' });
+    }
+
     // Validate required fields
     if (!formatted_batch_id || stage_type == undefined) {
       return res.status(400).json({ error: 'batch_id and stage_type are required' });
     }
-    const batchId = formatted_batch_id[0];
-    const batchName = formatted_batch_id.slice(1);
+    const batchId = formatted_batch_id;
         
     const batchHash = createBatchHash(metadata);
 
@@ -59,8 +69,7 @@ router.post('/add-stage-event', async (req, res) => {
       .insert([
         { 
           batch_id: batchId,
-          event_type: stage_type,
-          batch_name: batchName,
+          event_type: event_stages[stage_type],
           event_data: metadata || {},
           event_hash: batchHash
         }
@@ -71,10 +80,11 @@ router.post('/add-stage-event', async (req, res) => {
 
     res.status(201).json({ 
       message: 'Stage event recorded successfully',
-      data: data[0]
+      data: data[0],
+      batchHash: batchHash
     });
 
-    const tx = await addStage(batchId, stage_type, batchHash);
+    const tx = await addStage(batchId, event_stages[stage_type], batchHash);
     console.log({ txHash: tx.txHash, stageIndex: tx.stageIndex });
     return;
 
@@ -93,13 +103,13 @@ router.post('/add-stage-event', async (req, res) => {
 router.get('/batch-stages/:formatted_batch_id', async (req, res) => {
   try {
     const { formatted_batch_id } = req.params;
-    
+
+    // Validate batch ID
     if (!formatted_batch_id) {
       return res.status(400).json({ error: 'formatted_batch_id is required' });
     }
 
-    const batch_id = formatted_batch_id[0];
-    const batch_name = formatted_batch_id.slice(1);
+    const batch_id = formatted_batch_id;
 
     // 1. Get stages from Supabase
     const { data: supabaseStages, error: supabaseError } = await supabase
@@ -148,7 +158,6 @@ router.get('/batch-stages/:formatted_batch_id', async (req, res) => {
 
       return {
         stage_type: supabaseStage.event_type,
-        batch_name: supabaseStage.batch_name,
         metadata: supabaseStage.event_data,
         timestamp: supabaseStage.created_at,
         data_integrity: isDataValid,
@@ -164,7 +173,6 @@ router.get('/batch-stages/:formatted_batch_id', async (req, res) => {
     // 4. Return combined response
     res.json({
       batch_id,
-      batch_name,
       formatted_batch_id,
       stages: verifiedStages,
       summary: {
@@ -184,6 +192,57 @@ router.get('/batch-stages/:formatted_batch_id', async (req, res) => {
     res.status(500).json({ 
       error: error.message,
       details: 'Failed to fetch batch stages' 
+    });
+  }
+});
+
+
+/**
+ * @route POST /upload-report
+ * @description Upload a file to Supabase Storage under 'reports' folder and store reference in 'events' table
+ * @param {file} file - The file to upload
+ * @param {string} batchId - The batch ID associated with the report
+ * @param {string} eventType - Type of the event (e.g., 'quality_report', 'inspection')
+ * @returns {object} - Response with file URL and database record
+ */
+router.post('/upload-report', upload.single('file'), async (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: 'No file uploaded' });
+    }
+
+    const file = req.file;
+    const fileExt = file.originalname.split('.').pop();
+    const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 15)}.${fileExt}`;
+    const filePath = `reports/${fileName}`;
+
+    // Upload file to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('events')
+      .upload(filePath, file.buffer, {
+        contentType: file.mimetype,
+        upsert: false,
+      });
+
+    if (uploadError) {
+      console.error('Error uploading file:', uploadError);
+      return res.status(500).json({ error: 'Failed to upload file' });
+    }
+
+    // Get public URL of the uploaded file
+    const { data: { publicUrl } } = supabase.storage
+      .from('events')
+      .getPublicUrl(filePath);
+
+    res.status(201).json({
+      message: 'File uploaded successfully',
+      fileUrl: publicUrl,
+    });
+
+  } catch (error) {
+    console.error('Error in file upload:', error);
+    res.status(500).json({ 
+      error: error.message || 'An error occurred during file upload' 
     });
   }
 });

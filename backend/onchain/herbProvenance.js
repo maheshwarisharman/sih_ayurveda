@@ -42,6 +42,8 @@ export async function addStage(batchId, stageType, metadataHash) {
 
 // 3. Get batch summary
 export async function getBatchSummary(batchId) {
+
+  
   const result = await contract.getBatchSummary(batchId);
 
   // result is a struct tuple: [sku, stageCount, stages[]]
